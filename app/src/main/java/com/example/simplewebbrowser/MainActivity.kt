@@ -1,12 +1,17 @@
 package com.example.simplewebbrowser
 
+import android.graphics.Bitmap
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.inputmethod.EditorInfo
+import android.webkit.URLUtil
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.ImageButton
+import androidx.core.widget.ContentLoadingProgressBar
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,11 +28,17 @@ class MainActivity : AppCompatActivity() {
         findViewById(R.id.goForwardButton)
     }
 
+    private val refreshLayout: SwipeRefreshLayout by lazy {
+        findViewById(R.id.refreshLayout)
+    }
 
     private val webView: WebView by lazy {
         findViewById(R.id.webView)
     }
 
+    private val progressBar: ContentLoadingProgressBar by lazy {
+        findViewById(R.id.progressBar)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +60,7 @@ class MainActivity : AppCompatActivity() {
     private fun initViews() {
         webView.apply {
             webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
             webView.settings.javaScriptEnabled = true
             webView.loadUrl(DEFAULT_URL)
         }//apply : webview를 3번 호출하던걸 한번으로 줄여줌
@@ -57,7 +69,15 @@ class MainActivity : AppCompatActivity() {
     private fun bindViews() {
         addressBar.setOnEditorActionListener { v, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
-                webView.loadUrl(v.text.toString())
+
+              val loadingUrl=v.text.toString()
+                if(URLUtil.isNetworkUrl(loadingUrl)){
+                    webView.loadUrl(loadingUrl)
+
+                }else{
+                    webView.loadUrl("http://$loadingUrl")
+                }
+
             }
             return@setOnEditorActionListener false
 
@@ -73,6 +93,34 @@ class MainActivity : AppCompatActivity() {
             // TODO: 2021-08-09 홈버튼 눌렀을때 히스토리 없어지도록 수정 해야됨 
         }
 
+        refreshLayout.setOnRefreshListener {
+            webView.reload()
+        }
+    }
+
+    inner class WebViewClient : android.webkit.WebViewClient() {
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            progressBar.show()
+        }
+
+        override fun onPageFinished(view: WebView?, url: String?) {
+            super.onPageFinished(view, url)
+            refreshLayout.isRefreshing = false
+            progressBar.hide()
+            goBackButton.isEnabled=webView.canGoBack()
+            goForwardButton.isEnabled=webView.canGoForward()
+            addressBar.setText(url)
+        }
+    }
+
+    inner class WebChromeClient : android.webkit.WebChromeClient() {
+
+        override fun onProgressChanged(view: WebView?, newProgress: Int) {
+            super.onProgressChanged(view, newProgress)
+
+            progressBar.progress = newProgress
+        }
     }
 
     companion object {
