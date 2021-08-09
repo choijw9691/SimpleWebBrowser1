@@ -38,6 +38,7 @@
             android:paddingHorizontal="16dp"
             android:selectAllOnFocus="true"
             android:textSize="14sp"
+            android:background="@drawable/shape_address_bar"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toRightOf="@id/goHomeButton"
             app:layout_constraintRight_toLeftOf="@id/goBackButton"
